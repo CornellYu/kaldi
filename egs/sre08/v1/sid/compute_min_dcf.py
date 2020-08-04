@@ -56,18 +56,21 @@ def ComputeErrorRates(scores, labels):
       # Sort the scores from smallest to largest, and also get the corresponding
       # indexes of the sorted scores.  We will treat the sorted scores as the
       # thresholds at which the the error-rates are evaluated.
+      # 我们将把排序后的分数作为评估错误率的阈值，每个分数都可以作为阈值
       sorted_indexes, thresholds = zip(*sorted(
           [(index, threshold) for index, threshold in enumerate(scores)],
           key=itemgetter(1)))
       sorted_labels = []
       labels = [labels[i] for i in sorted_indexes]
-      fnrs = []
-      fprs = []
+      fnrs = []  
+      fprs = []  
 
       # At the end of this loop, fnrs[i] is the number of errors made by
       # incorrectly rejecting scores less than thresholds[i]. And, fprs[i]
       # is the total number of times that we have correctly accepted scores
       # greater than thresholds[i].
+      # 在全部是正例的基础上理解，这是错误拒绝的分数小于阈值的错误次数，即正例得分较低小于阈值，这个时候判断错误了
+      # 在全部是正例的基础上理解，这是总共判断正确的正例个数，大于阈值
       for i in range(0, len(labels)):
           if i == 0:
               fnrs.append(labels[i])
@@ -80,18 +83,20 @@ def ComputeErrorRates(scores, labels):
 
       # Now divide by the total number of false negative errors to
       # obtain the false positive rates across all thresholds
+      # 现在除以错误拒绝的总数，得到所有阈值的错误接受率 （逐个选取阈值进行遍历得到最佳阈值）
       fnrs = [x / float(fnrs_norm) for x in fnrs]
 
       # Divide by the total number of corret positives to get the
       # true positive rate.  Subtract these quantities from 1 to
       # get the false positive rates.
+      # 除以正确接受的总数得到真实的正确接受率。从1中减去这些量得到错误接受率。
       fprs = [1 - x / float(fprs_norm) for x in fprs]
       return fnrs, fprs, thresholds
 
 # Computes the minimum of the detection cost function.  The comments refer to
 # equations in Section 3 of the NIST 2016 Speaker Recognition Evaluation Plan.
 def ComputeMinDcf(fnrs, fprs, thresholds, p_target, c_miss, c_fa):
-    min_c_det = float("inf")
+    min_c_det = float("inf")  # 正无穷
     min_c_det_threshold = thresholds[0]
     for i in range(0, len(fnrs)):
         # See Equation (2).  it is a weighted sum of false negative
@@ -101,17 +106,17 @@ def ComputeMinDcf(fnrs, fprs, thresholds, p_target, c_miss, c_fa):
             min_c_det = c_det
             min_c_det_threshold = thresholds[i]
     # See Equations (3) and (4).  Now we normalize the cost.
-    c_def = min(c_miss * p_target, c_fa * (1 - p_target))
-    min_dcf = min_c_det / c_def
+    c_def = min(c_miss * p_target, c_fa * (1 - p_target))  # min（0.01，0.99）
+    min_dcf = min_c_det / c_def  # min_dcf = fnrs + 99 × fprs
     return min_dcf, min_c_det_threshold
 
 def main():
     args = GetArgs()
     scores_file = open(args.scores_filename, 'r').readlines()
     trials_file = open(args.trials_filename, 'r').readlines()
-    c_miss = args.c_miss
-    c_fa = args.c_fa
-    p_target = args.p_target
+    c_miss = args.c_miss  # 错误拒绝惩罚代价 default = 1
+    c_fa = args.c_fa  # 错误接受惩罚代价 default = 1
+    p_target = args.p_target  # 0.01（2008） 0.001（2010）
 
     scores = []
     labels = []
@@ -120,14 +125,14 @@ def main():
     for line in trials_file:
         utt1, utt2, target = line.rstrip().split()
         trial = utt1 + " " + utt2
-        trials[trial] = target
+        trials[trial] = target  # 把trials文件转换成列表形式
 
     for line in scores_file:
         utt1, utt2, score = line.rstrip().split()
         trial = utt1 + " " + utt2
         if trial in trials:
-            scores.append(float(score))
-            if trials[trial] == "target":
+            scores.append(float(score))  # 将score存入列表
+            if trials[trial] == "target":  # 根据target标签，按0和1的方式标注target/nontarget
                 labels.append(1)
             else:
                 labels.append(0)
