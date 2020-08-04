@@ -7,6 +7,8 @@
 #
 # Given a trials and scores file, this script
 # prepares input for the binary compute-eer.
+# 将socres文件和trials文件，抽取成 score target/nontarget 形式，后续输入到compute-eer中
+
 import sys
 trials = open(sys.argv[1], 'r').readlines()
 scores = open(sys.argv[2], 'r').readlines()
